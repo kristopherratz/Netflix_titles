@@ -1,0 +1,13 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+#Relationships between user ratings and release years?
+#Relationships between maturity ratings and user ratings?
+#Possible genre connections?
+#Ratings to targeted audiences due to maturity ratings?
+#what would be the difference of shows under TV-Y and TV-PG, i felt its the same since both are suitable for kids, just one end suggest parental guidance?
+```
+
