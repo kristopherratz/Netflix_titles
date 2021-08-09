@@ -7,20 +7,21 @@ output:
     number_sections: true  
     theme: united  
 ---
-
-```{r Prerequsites}
-library(tidyverse, warn.conflicts = F)
-library(dplyr, warn.conflicts = F)
-library(ggplot2, warn.conflicts = F)
-library(scales, warn.conflicts = F)
-library(lubridate, warn.conflicts = F)
+# Prerequisites:
+The following packages are required to operate the rest of this code.
+```{r message= FALSE}
+library(tidyverse)
+library(dplyr)
+library(ggplot2)
+library(scales)
+library(lubridate)
 ```
-# DataSet
+# DataSet:
 
 Import the required Netflix Data set, which can be found [Here!](https://www.kaggle.com/shivamb/netflix-shows')
-```{r}
+```{r message= FALSE}
 #read the processed Data
-netflixshows  <- read.csv('data/netflix_titles.csv')
+netflixshows  <- read.csv('../data/netflix_titles.csv')
 
 # Delete unnecessary Columns
 netflixshows <- netflixshows%>%
@@ -31,7 +32,7 @@ netflixshows <- netflixshows%>%
 # Introduction
 Netflix provides its users a plethora of shows to watch. The data set we're using comes from [Shivam Bansal](https://www.kaggle.com/shivamb). This dataset is broken down into multiple columns, some of which are removed due to irrelevance to the dataset. The included columns are the following:
 
-```{r}
+```{r message= FALSE}
 netflixshows%>%
   colnames()
 ```
@@ -47,7 +48,7 @@ To get a better understanding of the data set as a whole, we've dissected certai
 The visualization below graphically represents the distribution of the content released on Netflix's platform. They can either be labeled as a 'Movie' or a 'TV Show'.
 
 **Netflix Content by Content Type**
-```{r}
+```{r message= FALSE}
 netflixshows%>%
   group_by(type)%>%
   filter(type != is.na(type))%>%
@@ -70,7 +71,7 @@ netflixshows%>%
  
  
  **Netflix Movie Content by Country**
-```{r}
+```{r message= FALSE}
 #Because countries are sometimes grouped together, separating them is required.
   #Due to the size of the dataset, we had to filter out countries that had under 70 Movie entries.
 netflixshows%>%
@@ -100,7 +101,7 @@ netflixshows%>%
 ```
  **Netflix TV Show Content by Country**
 
-```{r}
+```{r message= FALSE}
 netflixshows%>%
   separate_rows(country, sep = ", ")%>%
   group_by(country)%>%
@@ -130,10 +131,10 @@ Netflix has a wide range of films on their platform. Below is a graphical repres
 
 **Netflix Movie content by Release Year**
 
-```{r}
+```{r message= FALSE}
 netflixshows%>%
   group_by(release_year)%>%
-  filter(release_year != "" |  !is.na(release_year))%>%
+  filter(release_year != "" & release_year != is.na(release_year))%>%
   filter(type == "Movie")%>%
   ggplot()+
     geom_bar(mapping = aes(
@@ -152,10 +153,10 @@ netflixshows%>%
 ```
 
 **Netflix TV Show content by Release Year**
-```{r}
+```{r message= FALSE}
 netflixshows%>%
   group_by(release_year)%>%
-  filter(release_year != "" |  !is.na(release_year))%>%
+  filter(release_year != "" & release_year != is.na(release_year))%>%
   filter(type == "TV Show")%>%
   ggplot()+
     geom_bar(mapping = aes(
@@ -168,7 +169,7 @@ netflixshows%>%
         )
 netflixshows%>%
   group_by(release_year)%>%
-  filter(release_year != "" |  !is.na(release_year))%>%
+  filter(release_year != ""  & release_year != is.na(release_year))%>%
   filter(type == "TV Show")%>%
   ungroup()%>%
   count(release_year, name = "Count")
@@ -180,10 +181,10 @@ Netflix rates all of their shows in a way that suggests appropriate ages see app
 
 **Netflix Content by Age Rating**
 
-```{r}
+```{r message= FALSE}
 netflixshows%>%
   group_by(rating)%>%
-  filter(rating != "" & !is.na(rating))%>%
+  filter(rating != "" & rating != is.na(rating))%>%
   count(.)%>%
   ggplot()+
   geom_bar(stat = "identity",mapping = aes(
@@ -197,7 +198,7 @@ netflixshows%>%
       )
 netflixshows%>%
   group_by(rating)%>%
-  filter(rating != "" & !is.na(rating))%>%
+  filter(rating != "" & rating != is.na(rating))%>%
   count(., name = "Number of Entries")
   
 ```
@@ -207,7 +208,7 @@ Netflix has a wide arrange of genres to choose from. This is what makes their pl
 
 **Netflix Movie Content by Genre**
 
-```{r}
+```{r message= FALSE}
 netflixshows%>%
   filter(type == "Movie")%>%
   separate_rows(listed_in, sep = ", ")%>%
@@ -234,7 +235,7 @@ netflixshows%>%
 ```
 **Netflix TV Show Content by Genre**
 
-```{r}
+```{r message= FALSE}
 netflixshows%>%
   filter(type == "TV Show")%>%
   separate_rows(listed_in, sep = ", ")%>%
@@ -264,7 +265,7 @@ Netflix likes to hire directors over and over if they keep pumping out content t
 
 **Netflix Movie Content by Director**
 
-```{r}
+```{r message= FALSE}
 netflixshows%>%
   filter(director != is.na(director) & director != "" & type == "Movie")%>%
   group_by(director)%>%
@@ -286,7 +287,7 @@ netflixshows%>%
 ```
 **Netflix TV Show Content by Director**
 
-```{r}
+```{r message= FALSE}
 netflixshows%>%
   filter(director != is.na(director) & director != "" & type == "TV Show")%>%
   group_by(director)%>%
@@ -321,7 +322,7 @@ Each Country has their own favorite type of Genre. Below is a graphical represen
 4. Is Netflix showing appropriate content genres per country?
 
  **Netflix Movie Genre Content by Country**
-```{r}
+```{r message= FALSE}
 netflixshows%>%
   separate_rows(country, sep = ", ")%>%
   separate_rows(listed_in, sep = ", ")%>%
@@ -354,7 +355,7 @@ netflixshows%>%
   head(25)
 ```
  **Netflix TV Show Genre Content by Country**
-```{r}
+```{r message= FALSE}
 netflixshows%>%
   separate_rows(country, sep = ", ")%>%
   separate_rows(listed_in, sep = ", ")%>%
@@ -395,7 +396,7 @@ Some countries have regulations on what certain platforms, such as Netflix, can 
 
 
  **Average Netflix Movie Content Rating by Country**
-```{r}
+```{r message= FALSE}
 netflixshows%>%
   separate_rows(country, sep = ", ")%>%
   filter(type == "Movie" & country != "" & country != is.na(country))%>%
@@ -425,7 +426,7 @@ netflixshows%>%
   head(25)
 ```
  **Average Netflix TV Show Content Rating by Country**
-```{r}
+```{r message= FALSE}
 netflixshows%>%
   separate_rows(country, sep = ", ")%>%
   filter(type == "TV Show" & country != "" & country != is.na(country))%>%
