@@ -1,24 +1,26 @@
 ---
 title: "Exploring and Analyzing Netflix Show User Reviews"
-output: html_notebook
+date: "`r format(Sys.time(), '%B %d, %Y')`"
+output: 
+  html_notebook:
+    toc: true 
+    number_sections: true  
+    theme: united  
 ---
 
-# Introduction
-Netflix provides its users a plethora of shows to watch, all from different decades and different Genres. But how do these shows 
-# Prerequisites
 ```{r Prerequsites}
-library(tidyverse)
-library(dplyr)
-library(ggplot2)
-library(scales)
-library(lubridate)
+library(tidyverse, warn.conflicts = F)
+library(dplyr, warn.conflicts = F)
+library(ggplot2, warn.conflicts = F)
+library(scales, warn.conflicts = F)
+library(lubridate, warn.conflicts = F)
 ```
 # DataSet
 
-Import the required Netflix Data set, which can be found [Here!](https://raw.githubusercontent.com/reisanar/datasets/master/netflixShows.csv)
+Import the required Netflix Data set, which can be found [Here!](https://www.kaggle.com/shivamb/netflix-shows')
 ```{r}
 #read the processed Data
-netflixshows  <- read.csv('netflix_titles.csv')
+netflixshows  <- read.csv('data/netflix_titles.csv')
 
 # Delete unnecessary Columns
 netflixshows <- netflixshows%>%
@@ -26,10 +28,18 @@ netflixshows <- netflixshows%>%
 
 ```
 
+# Introduction
+Netflix provides its users a plethora of shows to watch. The data set we're using comes from [Shivam Bansal](https://www.kaggle.com/shivamb). This dataset is broken down into multiple columns, some of which are removed due to irrelevance to the dataset. The included columns are the following:
+
+```{r}
+netflixshows%>%
+  colnames()
+```
+
 # Data Exploration and Analysis
 ## Exploring Single Variable Attributes
 
-To get a better understanding of the data set as a whole, we've dissected certain factors that are crucial in the full understanding. In addition to separating variables, we ran several checks to ensure our data is not misleading, such as Dates being listed in the future or corrupted text.
+To get a better understanding of the data set as a whole, we've dissected certain factors that are crucial in the full understanding. In addition to separating variables, we ran several checks to ensure our data is not misleading, such as Dates being listed in the future or corrupted text. The names of certain individuals can not be processed in this document correctly. 
 
 
 ### Content Type:
@@ -80,6 +90,13 @@ netflixshows%>%
           y = "Country Name",
           x = "Number of Movies"
         )
+netflixshows%>%
+  separate_rows(country, sep = ", ")%>%
+  group_by(country)%>%
+  filter(n()> 70 & type == "Movie" & country != "")%>%
+  count(., name = "Number of Movie Entries")%>% 
+  ungroup()%>%
+  arrange(desc("Number of Movie Entries"))
 ```
  **Netflix TV Show Content by Country**
 
@@ -102,7 +119,11 @@ netflixshows%>%
           x = "Number of TV Shows",
           
         )
-    
+  netflixshows%>%
+  separate_rows(country, sep = ", ")%>%
+  group_by(country)%>%
+  filter(n()> 70 & type == "TV Show" & country != "")%>%
+  count(., name = "Number of TV Show Entries")
 ```
 ### Year of Release:
 Netflix has a wide range of films on their platform. Below is a graphical representation of the distributions of content by original release date, separated by both Movies and TV Shows.
@@ -122,6 +143,12 @@ netflixshows%>%
           x = "Year",
           y = "Count"
         )
+netflixshows%>%
+  group_by(release_year)%>%
+  filter(release_year != "" |  !is.na(release_year))%>%
+  filter(type == "Movie")%>%
+  ungroup()%>%
+  count(release_year, name = "Count")
 ```
 
 **Netflix TV Show content by Release Year**
@@ -139,6 +166,12 @@ netflixshows%>%
           x = "Year",
           y = "Count"
         )
+netflixshows%>%
+  group_by(release_year)%>%
+  filter(release_year != "" |  !is.na(release_year))%>%
+  filter(type == "TV Show")%>%
+  ungroup()%>%
+  count(release_year, name = "Count")
 ```
 
 
@@ -162,6 +195,10 @@ netflixshows%>%
         x = "Count",
         y = "Age Rating"
       )
+netflixshows%>%
+  group_by(rating)%>%
+  filter(rating != "" & !is.na(rating))%>%
+  count(., name = "Number of Entries")
   
 ```
 
@@ -188,6 +225,12 @@ geom_bar(stat = "identity", show.legend = F)+
     x= "Number of Entries",
     y = "Genre Type"
   )
+netflixshows%>%
+  filter(type == "Movie")%>%
+  separate_rows(listed_in, sep = ", ")%>%
+  group_by(listed_in)%>%
+  summarize(listed_in)%>%
+  count(.)
 ```
 **Netflix TV Show Content by Genre**
 
@@ -209,6 +252,12 @@ geom_bar(stat = "identity",show.legend = F)+
     x= "Number of Entries",
     y = "Genre Type"
   )
+netflixshows%>%
+  filter(type == "TV Show")%>%
+  separate_rows(listed_in, sep = ", ")%>%
+  group_by(listed_in)%>%
+  summarize(listed_in)%>%
+  count(.)
 ```
 ### Directors:
 Netflix likes to hire directors over and over if they keep pumping out content that is popular. Below is a graphical representation of the top 10 directors featured on Netflix and the number of entries they released, both for Movies and TV Shows.
@@ -257,6 +306,8 @@ netflixshows%>%
   
   
 ```
+
+
 # Data Analysis:
 ## Analysizing Data with 2 or more variables:
 Comparing Data to itself is the most important factor when it comes to data analysis; how does Data A have a relationship to Data B? 
@@ -282,7 +333,7 @@ netflixshows%>%
   head(25)%>%
   ggplot(mapping = aes(
     x = Genres,
-    y = country,
+    y = reorder(country, -Genres),
     fill = listed_in
   ))+
   geom_histogram(stat = "identity")+
@@ -292,6 +343,15 @@ netflixshows%>%
     x = "Number of Entries per Genre",
     y = "Country Name"
   )
+netflixshows%>%
+  separate_rows(country, sep = ", ")%>%
+  separate_rows(listed_in, sep = ", ")%>%
+  filter(type == "Movie" & country != "" & country != is.na(country))%>%
+  group_by(country)%>%
+  count(listed_in, name = "Genres")%>%
+  filter(Genres == max(Genres) & Genres >= 2)%>%
+  arrange(desc(Genres))%>%
+  head(25)
 ```
  **Netflix TV Show Genre Content by Country**
 ```{r}
@@ -306,7 +366,7 @@ netflixshows%>%
   head(25)%>%
   ggplot(mapping = aes(
     x = Genres,
-    y = country,
+    y = reorder(country, -Genres),
     fill = listed_in
   ))+
   geom_histogram(stat = "identity")+
@@ -316,6 +376,15 @@ netflixshows%>%
     x = "Number of Entries per Genre",
     y = "Country Name"
   )
+netflixshows%>%
+  separate_rows(country, sep = ", ")%>%
+  separate_rows(listed_in, sep = ", ")%>%
+  filter(type == "TV Show" & country != "" & country != is.na(country))%>%
+  group_by(country)%>%
+  count(listed_in, name = "Genres")%>%
+  filter(Genres == max(Genres) & Genres >= 2)%>%
+  arrange(desc(Genres))%>%
+  head(25)
 ```
 ### Average Movie Rating per Country:
 Some countries have regulations on what certain platforms, such as Netflix, can show. Below is a graphical representation of the average rating for each country. The reason a graph such as this is helpful is answering questions such as: 
@@ -337,7 +406,7 @@ netflixshows%>%
   head(25)%>%
   ggplot(mapping = aes(
     x = RatingN,
-    y = country,
+    y = reorder(country, -RatingN),
     fill = rating
   ))+
   geom_histogram(stat = "identity")+
@@ -346,7 +415,14 @@ netflixshows%>%
     subtitle = "Countries require at least 2 or more entries per rating to be listed",
     x = "Number of Entries per Rating",
     y = "Country Name")
-
+netflixshows%>%
+  separate_rows(country, sep = ", ")%>%
+  filter(type == "Movie" & country != "" & country != is.na(country))%>%
+  group_by(country)%>%
+  count(rating, name = "RatingN")%>%
+  filter(RatingN == max(RatingN) & RatingN >= 2)%>%
+  arrange(desc(RatingN))%>%
+  head(25)
 ```
  **Average Netflix TV Show Content Rating by Country**
 ```{r}
@@ -360,7 +436,7 @@ netflixshows%>%
   head(25)%>%
   ggplot(mapping = aes(
     x = RatingN,
-    y = country,
+    y = reorder(country,RatingN),
     fill = rating
   ))+
   geom_histogram(stat = "identity")+
@@ -369,13 +445,23 @@ netflixshows%>%
     subtitle = "Countries require at least 2 or more entries per rating to be listed",
     x = "Number of Entries per Rating",
     y = "Country Name")
-
+netflixshows%>%
+  separate_rows(country, sep = ", ")%>%
+  filter(type == "TV Show" & country != "" & country != is.na(country))%>%
+  group_by(country)%>%
+  count(rating, name = "RatingN")%>%
+  filter(RatingN == max(RatingN) & RatingN >= 2)%>%
+  arrange(desc(RatingN))%>%
+  head(25)
 ```
-mk
+
+
 # Conclusion
+## What We've learned:
+After further analysis of the data set, we've gathered enough data to answer the questions that we asked. The use of the Netflix Dataset, even though it wasn't supplied to us via github, made an excellent source of information. The abundance of data and variables made it a good visual representation of Netflix as a whole. Through the course of this project, we learned the importance of clear and concise visual representations to help convey an overall message. The use of our skills helped strengthen out knowledge of R as a language and R Studio as an effective IDE to use. We were able to apply data manipulating tools, such as 'mutate()', 'filter()', and others. 
 
 # Citations
 
-
+Special Thanks to [Shivam Bansal](https://www.kaggle.com/shivamb) for providing the Netflix Dataset, which can be found [Here!](https://www.kaggle.com/shivamb/netflix-shows')
 
 
