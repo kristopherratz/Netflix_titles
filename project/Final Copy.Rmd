@@ -1,0 +1,468 @@
+---
+title: "Exploring and Analyzing Netflix Show User Reviews"
+date: "`r format(Sys.time(), '%B %d, %Y')`"
+output: 
+  html_notebook:
+    toc: true 
+    number_sections: true  
+    theme: united  
+---
+# Prerequisites:
+The following packages are required to operate the rest of this code.
+```{r message= FALSE}
+library(tidyverse)
+library(dplyr)
+library(ggplot2)
+library(scales)
+library(lubridate)
+```
+# DataSet:
+
+Import the required Netflix Data set, which can be found [Here!](https://www.kaggle.com/shivamb/netflix-shows')
+```{r message= FALSE}
+#read the processed Data
+netflixshows  <- read.csv('../data/netflix_titles.csv')
+
+# Delete unnecessary Columns
+netflixshows <- netflixshows%>%
+  select(-description, -show_id, - cast, -date_added)
+
+```
+
+# Introduction
+Netflix provides its users a plethora of shows to watch. The data set we're using comes from [Shivam Bansal](https://www.kaggle.com/shivamb). This dataset is broken down into multiple columns, some of which are removed due to irrelevance to the dataset. The included columns are the following:
+
+```{r message= FALSE}
+netflixshows%>%
+  colnames()
+```
+
+# Data Exploration and Analysis
+## Exploring Single Variable Attributes
+
+To get a better understanding of the data set as a whole, we've dissected certain factors that are crucial in the full understanding. In addition to separating variables, we ran several checks to ensure our data is not misleading, such as Dates being listed in the future or corrupted text. The names of certain individuals can not be processed in this document correctly. 
+
+
+### Content Type:
+
+The visualization below graphically represents the distribution of the content released on Netflix's platform. They can either be labeled as a 'Movie' or a 'TV Show'.
+
+**Netflix Content by Content Type**
+```{r message= FALSE}
+netflixshows%>%
+  group_by(type)%>%
+  filter(type != is.na(type))%>%
+  ggplot()+
+  geom_bar(mapping = aes(
+    x = type,
+    fill = type))+
+  labs(
+    title = "Netflix Content by Content Type",
+    x = "Content Type",
+    y = "Count"
+  )
+  
+  
+
+```
+
+### Country of Origin:
+ This next visualization graphically demonstrates the distribution of content on Netflix per country. Content is separated by the Type of Content it is, either Movie or TV Show.
+ 
+ 
+ **Netflix Movie Content by Country**
+```{r message= FALSE}
+#Because countries are sometimes grouped together, separating them is required.
+  #Due to the size of the dataset, we had to filter out countries that had under 70 Movie entries.
+netflixshows%>%
+  separate_rows(country, sep = ", ")%>%
+  group_by(country)%>%
+  filter(n()> 70 & type == "Movie" & country != "")%>%
+  count(.)%>%
+  ggplot()+
+    geom_bar(stat = "identity",mapping = aes(
+      y = reorder(country,n),
+      x = n,
+      color = country),
+      na.rm = T, show.legend = F)+
+        labs(
+          title = "Netflix Movie Content by Country",
+          subtitle = "Includes Countries where count is more than 70",
+          y = "Country Name",
+          x = "Number of Movies"
+        )
+netflixshows%>%
+  separate_rows(country, sep = ", ")%>%
+  group_by(country)%>%
+  filter(n()> 70 & type == "Movie" & country != "")%>%
+  count(., name = "Number of Movie Entries")%>% 
+  ungroup()%>%
+  arrange(desc("Number of Movie Entries"))
+```
+ **Netflix TV Show Content by Country**
+
+```{r message= FALSE}
+netflixshows%>%
+  separate_rows(country, sep = ", ")%>%
+  group_by(country)%>%
+  filter(n()> 70 & type == "TV Show" & country != "")%>%
+  count(.)%>%
+  ggplot()+
+    geom_bar(stat = "identity",mapping = aes(
+      y = reorder(country, -n),
+      x = n,
+      color = country),
+      na.rm = T,show.legend = F)+
+        labs(
+          title = "Netflix TV Show Content by Country",
+          subtitle = "Includes Countries where count is more than 70",
+          y = "Country Name",
+          x = "Number of TV Shows",
+          
+        )
+  netflixshows%>%
+  separate_rows(country, sep = ", ")%>%
+  group_by(country)%>%
+  filter(n()> 70 & type == "TV Show" & country != "")%>%
+  count(., name = "Number of TV Show Entries")
+```
+### Year of Release:
+Netflix has a wide range of films on their platform. Below is a graphical representation of the distributions of content by original release date, separated by both Movies and TV Shows.
+
+**Netflix Movie content by Release Year**
+
+```{r message= FALSE}
+netflixshows%>%
+  group_by(release_year)%>%
+  filter(release_year != "" & release_year != is.na(release_year))%>%
+  filter(type == "Movie")%>%
+  ggplot()+
+    geom_bar(mapping = aes(
+      x = release_year))+
+      labs(
+          title = "Netflix Movie content by Release Year",
+          x = "Year",
+          y = "Count"
+        )
+netflixshows%>%
+  group_by(release_year)%>%
+  filter(release_year != "" |  !is.na(release_year))%>%
+  filter(type == "Movie")%>%
+  ungroup()%>%
+  count(release_year, name = "Count")
+```
+
+**Netflix TV Show content by Release Year**
+```{r message= FALSE}
+netflixshows%>%
+  group_by(release_year)%>%
+  filter(release_year != "" & release_year != is.na(release_year))%>%
+  filter(type == "TV Show")%>%
+  ggplot()+
+    geom_bar(mapping = aes(
+      x = release_year
+     ))+
+      labs(
+          title = "Netflix TV Show content by Release Year",
+          x = "Year",
+          y = "Count"
+        )
+netflixshows%>%
+  group_by(release_year)%>%
+  filter(release_year != ""  & release_year != is.na(release_year))%>%
+  filter(type == "TV Show")%>%
+  ungroup()%>%
+  count(release_year, name = "Count")
+```
+
+
+### Age Rating:
+Netflix rates all of their shows in a way that suggests appropriate ages see appropriate material. The graph below demonstrates the distribution between  Netflix's content and the associating Age rating.
+
+**Netflix Content by Age Rating**
+
+```{r message= FALSE}
+netflixshows%>%
+  group_by(rating)%>%
+  filter(rating != "" & rating != is.na(rating))%>%
+  count(.)%>%
+  ggplot()+
+  geom_bar(stat = "identity",mapping = aes(
+    y = reorder(rating, -n),
+    x = n,
+    color = rating),show.legend = F)+
+    labs(
+        title = "Netflix Content by Age Rating",
+        x = "Count",
+        y = "Age Rating"
+      )
+netflixshows%>%
+  group_by(rating)%>%
+  filter(rating != "" & rating != is.na(rating))%>%
+  count(., name = "Number of Entries")
+  
+```
+
+### Genre Type:
+Netflix has a wide arrange of genres to choose from. This is what makes their platform so enjoyable by any age! Below is a graphical representation of the distribution of Netflix Genre Content. As before, they are separated by either Movies or TV Shows.
+
+**Netflix Movie Content by Genre**
+
+```{r message= FALSE}
+netflixshows%>%
+  filter(type == "Movie")%>%
+  separate_rows(listed_in, sep = ", ")%>%
+  group_by(listed_in)%>%
+  summarize(listed_in)%>%
+  count(.)%>%
+  ggplot(mapping = aes(
+    x = n,
+    y = reorder(listed_in,n),
+    color = listed_in))+
+geom_bar(stat = "identity", show.legend = F)+
+  labs(
+    title = "Netflix Movie Content by Genre",
+    subtitle = "*Some Genres group with others",
+    x= "Number of Entries",
+    y = "Genre Type"
+  )
+netflixshows%>%
+  filter(type == "Movie")%>%
+  separate_rows(listed_in, sep = ", ")%>%
+  group_by(listed_in)%>%
+  summarize(listed_in)%>%
+  count(.)
+```
+**Netflix TV Show Content by Genre**
+
+```{r message= FALSE}
+netflixshows%>%
+  filter(type == "TV Show")%>%
+  separate_rows(listed_in, sep = ", ")%>%
+  group_by(listed_in)%>%
+  summarize(listed_in)%>%
+  count(.)%>%
+  ggplot(mapping = aes(
+    x = n,
+    y = reorder(listed_in, -n),
+    color = listed_in))+
+geom_bar(stat = "identity",show.legend = F)+
+  labs(
+    title = "Netflix TV Show Content by Genre",
+    subtitle = "*Some Genres group with others",
+    x= "Number of Entries",
+    y = "Genre Type"
+  )
+netflixshows%>%
+  filter(type == "TV Show")%>%
+  separate_rows(listed_in, sep = ", ")%>%
+  group_by(listed_in)%>%
+  summarize(listed_in)%>%
+  count(.)
+```
+### Directors:
+Netflix likes to hire directors over and over if they keep pumping out content that is popular. Below is a graphical representation of the top 10 directors featured on Netflix and the number of entries they released, both for Movies and TV Shows.
+
+**Netflix Movie Content by Director**
+
+```{r message= FALSE}
+netflixshows%>%
+  filter(director != is.na(director) & director != "" & type == "Movie")%>%
+  group_by(director)%>%
+  summarize(director)%>%
+  count(.)%>%
+  arrange(desc(n))%>%
+  head(., n = 10)%>%
+  ggplot(mapping = aes(
+    y = reorder(director, -n),
+    x = n,
+    color = director))+
+  geom_bar(stat = "identity",show.legend = F)+
+  labs(
+    title = "Top 10 Netflix Movie Directors",
+    y = "Director name",
+    x = "Number of Movies on Netflix")
+  
+
+```
+**Netflix TV Show Content by Director**
+
+```{r message= FALSE}
+netflixshows%>%
+  filter(director != is.na(director) & director != "" & type == "TV Show")%>%
+  group_by(director)%>%
+  summarize(director)%>%
+  count(.)%>%
+  arrange(desc(n))%>%
+  head(10)%>%
+  ggplot(mapping = aes(
+    y = reorder(director, -n),
+    x = n,
+    color = director))+
+  geom_bar(stat = "identity",show.legend = F)+
+  labs(
+    title = "Top 10 Netflix TV Show Directors",
+    y = "Director name",
+    x = "Number of TV Shows on Netflix")
+  
+  
+```
+
+
+# Data Analysis:
+## Analysizing Data with 2 or more variables:
+Comparing Data to itself is the most important factor when it comes to data analysis; how does Data A have a relationship to Data B? 
+
+### Most Genres per Country:
+Each Country has their own favorite type of Genre. Below is a graphical representation of the relationship between Genres and associating countries. The data is separated by content type, either "Movie" or "TV Show". A graph like this is helpful to answer questions such as:
+ 
+1. What genre does each country prefer?
+2. Which country has the most of that particular genre?
+3. What is the target audience per country?
+4. Is Netflix showing appropriate content genres per country?
+
+ **Netflix Movie Genre Content by Country**
+```{r message= FALSE}
+netflixshows%>%
+  separate_rows(country, sep = ", ")%>%
+  separate_rows(listed_in, sep = ", ")%>%
+  filter(type == "Movie" & country != "" & country != is.na(country))%>%
+  group_by(country)%>%
+  count(listed_in, name = "Genres")%>%
+  filter(Genres == max(Genres) & Genres >= 2)%>%
+  arrange(desc(Genres))%>%
+  head(25)%>%
+  ggplot(mapping = aes(
+    x = Genres,
+    y = reorder(country, -Genres),
+    fill = listed_in
+  ))+
+  geom_histogram(stat = "identity")+
+  labs(
+    title = "Most Netflix Movie Entry Genres by Country",
+    subtitle = "Countries require at least 2 or more entries per genre to be listed",
+    x = "Number of Entries per Genre",
+    y = "Country Name"
+  )
+netflixshows%>%
+  separate_rows(country, sep = ", ")%>%
+  separate_rows(listed_in, sep = ", ")%>%
+  filter(type == "Movie" & country != "" & country != is.na(country))%>%
+  group_by(country)%>%
+  count(listed_in, name = "Genres")%>%
+  filter(Genres == max(Genres) & Genres >= 2)%>%
+  arrange(desc(Genres))%>%
+  head(25)
+```
+ **Netflix TV Show Genre Content by Country**
+```{r message= FALSE}
+netflixshows%>%
+  separate_rows(country, sep = ", ")%>%
+  separate_rows(listed_in, sep = ", ")%>%
+  filter(type == "TV Show" & country != "" & country != is.na(country))%>%
+  group_by(country)%>%
+  count(listed_in, name = "Genres")%>%
+  filter(Genres == max(Genres) & Genres >= 2)%>%
+  arrange(desc(Genres))%>%
+  head(25)%>%
+  ggplot(mapping = aes(
+    x = Genres,
+    y = reorder(country, -Genres),
+    fill = listed_in
+  ))+
+  geom_histogram(stat = "identity")+
+  labs(
+    title = "Most Netflix TV Show Entry Genres by Country",
+    subtitle = "Countries require at least 2 or more entries per genre to be listed",
+    x = "Number of Entries per Genre",
+    y = "Country Name"
+  )
+netflixshows%>%
+  separate_rows(country, sep = ", ")%>%
+  separate_rows(listed_in, sep = ", ")%>%
+  filter(type == "TV Show" & country != "" & country != is.na(country))%>%
+  group_by(country)%>%
+  count(listed_in, name = "Genres")%>%
+  filter(Genres == max(Genres) & Genres >= 2)%>%
+  arrange(desc(Genres))%>%
+  head(25)
+```
+### Average Movie Rating per Country:
+Some countries have regulations on what certain platforms, such as Netflix, can show. Below is a graphical representation of the average rating for each country. The reason a graph such as this is helpful is answering questions such as: 
+
+1. What Rating is most appropriate per country?
+2. What age group is most prevalent per country?
+3. Does Netflix prefer to target older or younger audiences? 
+
+
+ **Average Netflix Movie Content Rating by Country**
+```{r message= FALSE}
+netflixshows%>%
+  separate_rows(country, sep = ", ")%>%
+  filter(type == "Movie" & country != "" & country != is.na(country))%>%
+  group_by(country)%>%
+  count(rating, name = "RatingN")%>%
+  filter(RatingN == max(RatingN) & RatingN >= 2)%>%
+  arrange(desc(RatingN))%>%
+  head(25)%>%
+  ggplot(mapping = aes(
+    x = RatingN,
+    y = reorder(country, -RatingN),
+    fill = rating
+  ))+
+  geom_histogram(stat = "identity")+
+  labs(
+    title = "Most Netflix Movie Entry Ratings by Country",
+    subtitle = "Countries require at least 2 or more entries per rating to be listed",
+    x = "Number of Entries per Rating",
+    y = "Country Name")
+netflixshows%>%
+  separate_rows(country, sep = ", ")%>%
+  filter(type == "Movie" & country != "" & country != is.na(country))%>%
+  group_by(country)%>%
+  count(rating, name = "RatingN")%>%
+  filter(RatingN == max(RatingN) & RatingN >= 2)%>%
+  arrange(desc(RatingN))%>%
+  head(25)
+```
+ **Average Netflix TV Show Content Rating by Country**
+```{r message= FALSE}
+netflixshows%>%
+  separate_rows(country, sep = ", ")%>%
+  filter(type == "TV Show" & country != "" & country != is.na(country))%>%
+  group_by(country)%>%
+  count(rating, name = "RatingN")%>%
+  filter(RatingN == max(RatingN) & RatingN >= 2)%>%
+  arrange(desc(RatingN))%>%
+  head(25)%>%
+  ggplot(mapping = aes(
+    x = RatingN,
+    y = reorder(country,RatingN),
+    fill = rating
+  ))+
+  geom_histogram(stat = "identity")+
+  labs(
+    title = "Most Netflix TV Show Entry Ratings by Country",
+    subtitle = "Countries require at least 2 or more entries per rating to be listed",
+    x = "Number of Entries per Rating",
+    y = "Country Name")
+netflixshows%>%
+  separate_rows(country, sep = ", ")%>%
+  filter(type == "TV Show" & country != "" & country != is.na(country))%>%
+  group_by(country)%>%
+  count(rating, name = "RatingN")%>%
+  filter(RatingN == max(RatingN) & RatingN >= 2)%>%
+  arrange(desc(RatingN))%>%
+  head(25)
+```
+
+
+# Conclusion
+## What We've learned:
+After further analysis of the data set, we've gathered enough data to answer the questions that we asked. The use of the Netflix Dataset, even though it wasn't supplied to us via github, made an excellent source of information. The abundance of data and variables made it a good visual representation of Netflix as a whole. Through the course of this project, we learned the importance of clear and concise visual representations to help convey an overall message. The use of our skills helped strengthen out knowledge of R as a language and R Studio as an effective IDE to use. We were able to apply data manipulating tools, such as 'mutate()', 'filter()', and others. 
+
+# Citations
+
+Special Thanks to [Shivam Bansal](https://www.kaggle.com/shivamb) for providing the Netflix Dataset, which can be found [Here!](https://www.kaggle.com/shivamb/netflix-shows')
+
+
